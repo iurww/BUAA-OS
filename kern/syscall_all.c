@@ -60,7 +60,6 @@ void __attribute__((noreturn)) sys_yield(void) {
 	// Hint: Just use 'schedule' with 'yield' set.
 	/* Exercise 4.7: Your code here. */
 	schedule(1);
-
 }
 
 /* Overview:
@@ -206,7 +205,7 @@ int sys_mem_map(u_int srcid, u_int srcva, u_int dstid, u_int dstva, u_int perm) 
 	/* Step 4: Find the physical page mapped at 'srcva' in the address space of 'srcid'. */
 	/* Return -E_INVAL if 'srcva' is not mapped. */
 	/* Exercise 4.5: Your code here. (4/4) */
-	if((pp = page_lookup(srcenv->env_pgdir, srcva ,0)) == NULL) {
+	if ((pp = page_lookup(srcenv->env_pgdir, srcva, 0)) == NULL) {
 		return -E_INVAL;
 	}
 
@@ -313,10 +312,10 @@ int sys_set_env_status(u_int envid, u_int status) {
 	/* Step 3: Update 'env_sched_list' if the 'env_status' of 'env' is being changed. */
 	/* Exercise 4.14: Your code here. (3/3) */
 	if (env->env_status == ENV_RUNNABLE && status == ENV_NOT_RUNNABLE) {
-		TAILQ_REMOVE(&env_sched_list,env,env_sched_link);
+		TAILQ_REMOVE(&env_sched_list, env, env_sched_link);
 	}
 	if (env->env_status == ENV_NOT_RUNNABLE && status == ENV_RUNNABLE) {
-		TAILQ_INSERT_HEAD(&env_sched_list,env,env_sched_link);
+		TAILQ_INSERT_HEAD(&env_sched_list, env, env_sched_link);
 	}
 
 	/* Step 4: Set the 'env_status' of 'env'. */
@@ -450,7 +449,7 @@ int sys_ipc_try_send(u_int envid, u_int value, u_int srcva, u_int perm) {
 	/* Return -E_INVAL if 'srcva' is not zero and not mapped in 'curenv'. */
 	if (srcva != 0) {
 		/* Exercise 4.8: Your code here. (8/8) */
-		if((p = page_lookup(curenv->env_pgdir, srcva, 0)) == NULL) {
+		if ((p = page_lookup(curenv->env_pgdir, srcva, 0)) == NULL) {
 			return -E_INVAL;
 		}
 		page_insert(e->env_pgdir, e->env_asid, p, e->env_ipc_dstva, perm);
@@ -494,7 +493,17 @@ int sys_cgetc(void) {
  */
 int sys_write_dev(u_int va, u_int pa, u_int len) {
 	/* Exercise 5.1: Your code here. (1/2) */
-
+	int r = is_illegal_va_range(va, len);
+	if (r != 0) {
+		return -E_INVAL;
+	}
+	if ((pa >= 0x10000000 && (pa + len) <= 0x10000020) ||
+	    (pa >= 0x13000000 && (pa + len) <= 0x13004200) ||
+	    (pa >= 0x15000000 && (pa + len) <= 0x15000200)) {
+		memcpy((char *)(pa + 0xA0000000), (char *)va, len);
+	} else {
+		return -E_INVAL;
+	}
 	return 0;
 }
 
@@ -511,7 +520,17 @@ int sys_write_dev(u_int va, u_int pa, u_int len) {
  */
 int sys_read_dev(u_int va, u_int pa, u_int len) {
 	/* Exercise 5.1: Your code here. (2/2) */
-
+	int r = is_illegal_va_range(va, len);
+	if (r != 0) {
+		return -E_INVAL;
+	}
+	if ((pa >= 0x10000000 && (pa + len) <= 0x10000020) ||
+	    (pa >= 0x13000000 && (pa + len) <= 0x13004200) ||
+	    (pa >= 0x15000000 && (pa + len) <= 0x15000200)) {
+		memcpy((char *)va, (char *)(pa + 0xA0000000), len);
+	} else {
+		return -E_INVAL;
+	}
 	return 0;
 }
 
@@ -570,12 +589,11 @@ void do_syscall(struct Trapframe *tf) {
 	/* Step 4: Last 2 args are stored in stack at [$sp + 16 bytes], [$sp + 20 bytes]. */
 	u_int arg4, arg5;
 	/* Exercise 4.2: Your code here. (3/4) */
-	arg4 = *(u_int*)(tf->regs[29] + 16);
-    arg5 = *(u_int*)(tf->regs[29] + 20);
+	arg4 = *(u_int *)(tf->regs[29] + 16);
+	arg5 = *(u_int *)(tf->regs[29] + 20);
 
 	/* Step 5: Invoke 'func' with retrieved arguments and store its return value to $v0 in 'tf'.
 	 */
 	/* Exercise 4.2: Your code here. (4/4) */
 	tf->regs[2] = func(arg1, arg2, arg3, arg4, arg5);
-
 }

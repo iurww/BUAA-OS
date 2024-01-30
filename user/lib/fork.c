@@ -76,7 +76,7 @@ static void __attribute__((noreturn)) cow_entry(struct Trapframe *tf) {
  *     'sys_mem_map' in kernel.
  */
 static void duppage(u_int envid, u_int vpn) {
-	int r;
+	// int r;
 	u_int addr;
 	u_int perm;
 
@@ -93,14 +93,13 @@ static void duppage(u_int envid, u_int vpn) {
 	/* Exercise 4.10: Your code here. (2/2) */
 	int flag = 0;
 	if ((perm & PTE_D) && !(perm & PTE_LIBRARY) && !(perm & PTE_COW)) {
-		perm = (perm & ~ PTE_D) | PTE_COW;
+		perm = (perm & ~PTE_D) | PTE_COW;
 		flag = 1;
 	}
-	syscall_mem_map(0, addr, envid, addr, perm);
+	syscall_mem_map(0, (void *)addr, envid, (void *)addr, perm);
 	if (flag) {
-		syscall_mem_map(0, addr, 0, addr, perm);
+		syscall_mem_map(0, (void *)addr, 0, (void *)addr, perm);
 	}
-
 }
 
 /* Overview:
@@ -136,7 +135,7 @@ int fork(void) {
 	/* Step 3: Map all mapped pages below 'USTACKTOP' into the child's address space. */
 	// Hint: You should use 'duppage'.
 	/* Exercise 4.15: Your code here. (1/2) */
-	for(i = 0; i < VPN(USTACKTOP); i++) {
+	for (i = 0; i < VPN(USTACKTOP); i++) {
 		if ((vpd[i >> 10] & PTE_V) && (vpt[i] & PTE_V)) {
 			duppage(child, i);
 		}

@@ -276,8 +276,8 @@ int env_alloc(struct Env **new, u_int parent_id) {
 	/* Exercise 3.4: Your code here. (3/4) */
 	e->env_id = mkenvid(e);
     e->env_parent_id = parent_id;
-	if(asid_alloc(&(e->env_asid)) != 0){
-		return -E_NO_FREE_ENV;
+	if((r = asid_alloc(&(e->env_asid))) != 0){
+		return r;
 	}
 
 	/* Step 4: Initialize the sp and 'cp0_status' in 'e->env_tf'. */
