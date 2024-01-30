@@ -120,6 +120,11 @@ int envid2env(u_int envid, struct Env **penv, int checkperm) {
 	 *   You may want to use 'ENVX'.
 	 */
 	/* Exercise 4.3: Your code here. (1/2) */
+	if (envid == 0) {
+		*penv = curenv;
+		return 0;
+	}
+	e = &envs[ENVX(envid)];
 
 	if (e->env_status == ENV_FREE || e->env_id != envid) {
 		return -E_BAD_ENV;
@@ -132,6 +137,12 @@ int envid2env(u_int envid, struct Env **penv, int checkperm) {
 	 *   If violated, return '-E_BAD_ENV'.
 	 */
 	/* Exercise 4.3: Your code here. (2/2) */
+	if (checkperm != 0) {
+		if (e != curenv && curenv->env_id != e->env_parent_id) {
+        	*penv = 0;
+        	return -E_BAD_ENV;
+		}
+    }
 
 	/* Step 3: Assign 'e' to '*penv'. */
 	*penv = e;
@@ -162,6 +173,10 @@ void env_init(void) {
 		LIST_INSERT_HEAD(&env_free_list, &envs[i], env_link);
         envs[i].env_status = ENV_FREE;
 	}
+	// printk("envs addr %x\n", envs);
+	// printk("sizeof env struct %d\n", sizeof(struct Env));
+	// printk("sizeof envs %x\n", NENV * sizeof(struct Env));
+	// printk("envs need pages %d\n", NENV * sizeof(struct Env) / BY2PG);
 
 	/*
 	 * We want to map 'UPAGES' and 'UENVS' to *every* user space with PTE_G permission (without
@@ -261,7 +276,6 @@ int env_alloc(struct Env **new, u_int parent_id) {
 	/* Exercise 3.4: Your code here. (3/4) */
 	e->env_id = mkenvid(e);
     e->env_parent_id = parent_id;
-    e->env_status = ENV_RUNNABLE;
 	if(asid_alloc(&(e->env_asid)) != 0){
 		return -E_NO_FREE_ENV;
 	}

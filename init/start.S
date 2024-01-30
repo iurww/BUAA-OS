@@ -14,4 +14,4 @@ EXPORT(_start)
 	lui sp, 0x8040
 	/* jump to mips_init */
 	/* Exercise 1.3: Your code here. (2/2) */
-	jal mips_init
+	j mips_init
