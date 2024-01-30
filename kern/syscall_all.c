@@ -78,7 +78,7 @@ int sys_env_destroy(u_int envid) {
 	struct Env *e;
 	try(envid2env(envid, &e, 1));
 
-	printk("[%08x] destroying %08x\n", curenv->env_id, e->env_id);
+	// printk("[%08x] destroying %08x\n", curenv->env_id, e->env_id);
 	env_destroy(e);
 	return 0;
 }
@@ -460,9 +460,9 @@ int sys_ipc_try_send(u_int envid, u_int value, u_int srcva, u_int perm) {
 // XXX: kernel does busy waiting here, blocking all envs
 int sys_cgetc(void) {
 	int ch;
-	while ((ch = scancharc()) == 0) {
-	}
-	return ch;
+	// while ((ch = scancharc()) == 0) {
+	// }
+	return scancharc();
 }
 
 /* Overview:
@@ -534,6 +534,105 @@ int sys_read_dev(u_int va, u_int pa, u_int len) {
 	return 0;
 }
 
+// 0 - create
+// 1 - get
+// 2 - set
+// 4 - unset
+// 8 - get list
+// 16 - create readonly
+int sys_env_var(char *name, char *value, u_int op) {
+	const int MOD = 1 << 8;
+	static char name_table[1 << 8][64];
+	static char value_table[1 << 8][256];
+	static int is_readonly[1 << 8];
+	static int belone[1 << 8];
+	static int curshell;
+
+	if (op == 65536) {
+		curshell = curenv->env_id;
+		// printk("shell : %d\n",curshell);
+		return 0;
+	}
+
+	if (op == 8) {
+		int pos = 0, i;
+		for (i = 0; i < MOD; ++i)
+			if (name_table[i][0]) {
+				if (belone[i] != 0 && belone[i] != curshell)
+					continue;
+				strcpy(name + pos * 64, name_table[i]);
+				strcpy(value + pos * 256, value_table[i]);
+				// printk("name : %s, value : %s\n", name + pos * 64,value + pos *
+				// 256);
+				++pos;
+			}
+		name[pos * 64] = 0;
+	}
+
+	u_int pos = strhash(name);
+	// printk("name : %s, hash : %d\n",name, pos);
+
+	while (name_table[pos][0]) {
+		if (strcmp(name_table[pos], name) == 0) { // FOUND
+			if (op == 0)
+				return 0;
+			break;
+		} else {
+			++pos;
+			if (pos == MOD)
+				pos = 0;
+		}
+	}
+
+	if ((op & 0xff) == 0) {
+		// printk("create\n");
+		strcpy(name_table[pos], name);
+		strcpy(value_table[pos], value);
+		if (op & 0x0100) {
+			belone[pos] = curshell;
+		}
+	} else if ((op & 1) == 1) {
+		if (strcmp(name_table[pos], name))
+			return -E_ENV_VAR_NOT_FOUND;
+		// printk("belond : %d  cur : %d\n", belone[pos], curshell);
+		if (belone[pos] != curshell && belone[pos] != 0)
+			return -E_ENV_VAR_NOT_FOUND;
+		strcpy(value, value_table[pos]);
+	} else if ((op & 2) == 2) {
+		if (strcmp(name_table[pos], name))
+			return -E_ENV_VAR_NOT_FOUND;
+		if (belone[pos] != curshell && belone[pos] != 0)
+			return -E_ENV_VAR_NOT_FOUND;
+		if (is_readonly[pos])
+			return -E_ENV_VAR_READONLY;
+		strcpy(value_table[pos], value);
+	} else if ((op & 4) == 4) {
+		if (strcmp(name_table[pos], name))
+			return -E_ENV_VAR_NOT_FOUND;
+		if (belone[pos] != curshell && belone[pos] != 0)
+			return -E_ENV_VAR_NOT_FOUND;
+		if (is_readonly[pos]) {
+			return -E_ENV_VAR_READONLY;
+		}
+		is_readonly[pos] = 0;
+		int p = 0;
+		while (p < 64 && name_table[pos][p])
+			name_table[pos][p++] = 0;
+		p = 0;
+		while (p < 256 && value_table[pos][p])
+			value_table[pos][p++] = 0;
+	} else if ((op & 16) == 16) {
+		strcpy(name_table[pos], name);
+		strcpy(value_table[pos], value);
+		is_readonly[pos] = 1;
+		if (op & 0x0100) {
+			belone[pos] = curshell;
+		}
+	}
+
+	return 0;
+}
+
 void *syscall_table[MAX_SYSNO] = {
     [SYS_putchar] = sys_putchar,
     [SYS_print_cons] = sys_print_cons,
@@ -553,6 +652,7 @@ void *syscall_table[MAX_SYSNO] = {
     [SYS_cgetc] = sys_cgetc,
     [SYS_write_dev] = sys_write_dev,
     [SYS_read_dev] = sys_read_dev,
+    [SYS_env_var] = sys_env_var,
 };
 
 /* Overview:

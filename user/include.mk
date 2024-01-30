@@ -17,7 +17,8 @@ ifeq ($(call lab-ge,5), true)
 			file.o \
 			fsipc.o \
 			console.o \
-			fprintf.o
+			fprintf.o \
+			curpath.o
 
 endif
 
@@ -41,7 +42,16 @@ ifeq ($(call lab-ge,6), true)
 			testbss.b \
 			testfdsharing.b \
 			pingpong.b \
-			init.b
+			init.b \
+			tree.b \
+			mkdir.b \
+			touch.b \
+			history.b \
+			clear.b \
+			declare.b \
+			unset.b \
+			cd.b \
+			pwd.b
 endif
 
 USERLIB := $(addprefix lib/, $(USERLIB)) $(wildcard ../lib/*.o)

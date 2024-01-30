@@ -101,11 +101,19 @@ static int spawn_mapper(void *data, u_long va, size_t offset, u_int perm, const 
 	return 0;
 }
 
-int spawn(char *prog, char **argv) {
+int spawn(char *prog, char **argv, int type) {
 	// Step 1: Open the file 'prog' (the path of the program).
 	// Return the error if 'open' fails.
-	int fd;
-	if ((fd = open(prog, O_RDONLY)) < 0) {
+	int fd, i;
+	char name[128], *p = prog;
+	for (i = 0; p[i]; i++) {
+		name[i] = p[i];
+	}
+	name[i] = 0;
+	if (type)
+		name[i] = '.', name[i + 1] = 'b', name[i + 2] = 0;
+	// printf("full file name : %s\n", name);
+	if ((fd = open(name, O_RDONLY)) < 0) {
 		return fd;
 	}
 
@@ -154,9 +162,9 @@ int spawn(char *prog, char **argv) {
 		// You may want to use 'seek' and 'readn'.
 		/* Exercise 6.4: Your code here. (4/6) */
 		if ((r = seek(fd, ph_off)) < 0)
-            goto err1;
-        if ((r = readn(fd, elfbuf, ehdr->e_phentsize)) < 0)
-            goto err1;
+			goto err1;
+		if ((r = readn(fd, elfbuf, ehdr->e_phentsize)) < 0)
+			goto err1;
 
 		Elf32_Phdr *ph = (Elf32_Phdr *)elfbuf;
 		if (ph->p_type == PT_LOAD) {
@@ -173,7 +181,7 @@ int spawn(char *prog, char **argv) {
 			// Use 'spawn_mapper' as the callback, and '&child' as its data.
 			// 'goto err1' if that fails.
 			/* Exercise 6.4: Your code here. (6/6) */
-			if((r = elf_load_seg(ph, bin, spawn_mapper, &child)) < 0)
+			if ((r = elf_load_seg(ph, bin, spawn_mapper, &child)) < 0)
 				goto err1;
 		}
 	}
@@ -224,5 +232,5 @@ err:
 int spawnl(char *prog, char *args, ...) {
 	// Thanks to MIPS calling convention, the layout of arguments on the stack
 	// are straightforward.
-	return spawn(prog, &args);
+	return spawn(prog, &args, 0);
 }

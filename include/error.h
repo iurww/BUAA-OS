@@ -44,6 +44,11 @@
 // File not a valid executable
 #define E_NOT_EXEC 13
 
+// Environment Variables
+#define E_ENV_VAR_NOT_FOUND 14
+#define E_ENV_VAR_READONLY 15
+
+
 /*
  * A quick wrapper around function calls to propagate errors.
  * Use this with caution, as it leaks resources we've acquired so far.

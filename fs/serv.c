@@ -98,10 +98,19 @@ void serve_open(u_int envid, struct Fsreq_open *rq) {
 
 	// Open the file.
 	if ((r = file_open(rq->req_path, &f)) < 0) {
+		if (r == -E_NOT_FOUND && (rq->req_omode & O_CREAT)) {
+			if ((r = file_create(rq->req_path, &f)) < 0) {
+				ipc_send(envid, r, 0, 0);
+				return;
+			}
+			f->f_type = FTYPE_REG;
+			goto creat_success;
+		}
 		ipc_send(envid, r, 0, 0);
 		return;
 	}
 
+	creat_success:
 	// Save the file pointer.
 	o->o_file = f;
 
@@ -178,7 +187,6 @@ void serve_remove(u_int envid, struct Fsreq_remove *rq) {
 	// Step 2: Respond the return value to the requester 'envid' using 'ipc_send'.
 	/* Exercise 5.11: Your code here. (2/2) */
 	ipc_send(envid, r, 0, 0);
-
 }
 
 void serve_dirty(u_int envid, struct Fsreq_dirty *rq) {
@@ -200,6 +208,18 @@ void serve_dirty(u_int envid, struct Fsreq_dirty *rq) {
 
 void serve_sync(u_int envid) {
 	fs_sync();
+	ipc_send(envid, 0, 0, 0);
+}
+
+void serve_create(u_int envid, struct Fsreq_create *rq) {
+	int r;
+	char *path = (char *)rq->req_path;
+	struct File *file;
+	if ((r = file_create(path, &file)) < 0) {
+		ipc_send(envid, r, 0, 0);
+		return;
+	}
+	file->f_type = rq->type;
 	ipc_send(envid, 0, 0, 0);
 }
 
@@ -244,6 +264,10 @@ void serve(void) {
 
 		case FSREQ_SYNC:
 			serve_sync(whom);
+			break;
+
+		case FSREQ_CREATE:
+			serve_create(whom, (struct Fsreq_create *)REQVA);
 			break;
 
 		default:

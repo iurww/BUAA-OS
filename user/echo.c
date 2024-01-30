@@ -13,7 +13,21 @@ int main(int argc, char **argv) {
 		if (i > 1) {
 			printf(" ");
 		}
-		printf("%s", argv[i]);
+		if(argv[i][0] == '"') {
+			printf("%s", argv[i] + 1);
+			continue;
+		}
+		if (argv[i][0] == '$') {
+			char value[256] = {0};
+			if (syscall_env_var(argv[i] + 1, value, 1) < 0) {
+				printf("Environment var " RED([%s]) " Not Exists!\n", argv[i] + 1);
+				return 0;
+			}
+
+			printf("%s", value);
+		} else {
+			printf("%s", argv[i]);
+		}
 	}
 	if (!nflag) {
 		printf("\n");

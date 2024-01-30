@@ -233,6 +233,9 @@ int write(int fdnum, const void *buf, u_int n) {
 		return -E_INVAL;
 	}
 
+	if(fd->fd_omode & O_WAPPEND) {
+		seek(fdnum, ((struct Filefd *)fd)->f_file.f_size);
+	}
 	r = dev->dev_write(fd, buf, n, fd->fd_offset);
 	if (r > 0) {
 		fd->fd_offset += r;

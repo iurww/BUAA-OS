@@ -43,7 +43,7 @@ void ls1(char *prefix, u_int isdir, u_int size, char *name) {
 	char *sep;
 
 	if (flag['l']) {
-		printf("%11d %c ", size, isdir ? 'd' : '-');
+		printf("\n%11d %c ", size, isdir ? 'd' : '-');
 	}
 	if (prefix) {
 		if (prefix[0] && prefix[strlen(prefix) - 1] != '/') {
@@ -53,7 +53,20 @@ void ls1(char *prefix, u_int isdir, u_int size, char *name) {
 		}
 		printf("%s%s", prefix, sep);
 	}
-	printf("%s", name);
+	if (name[0] == '.') {
+		if (flag['a']) {
+			printf("%s", name);
+		}
+	} else {
+		int l = strlen(name);
+		if (name[l - 1] == 'b' && name[l - 2] == '.')
+			printf(GREEN(%s), name);
+		else if (isdir) 
+			printf(BLUE(%s), name);
+		else 
+			printf("%s", name);
+	}
+
 	if (flag['F'] && isdir) {
 		printf("/");
 	}
@@ -65,25 +78,32 @@ void usage(void) {
 	exit();
 }
 
+int whichshell;
+
 int main(int argc, char **argv) {
 	int i;
-
+    // printf("hhahhaha %d \n",whichshell);
 	ARGBEGIN {
 	default:
 		usage();
 	case 'd':
 	case 'F':
 	case 'l':
+	case 'a':
 		flag[(u_char)ARGC()]++;
 		break;
 	}
 	ARGEND
 
+	char curpath[128] = {0};
+	char temp[128] = {0};
 	if (argc == 0) {
-		ls("/", "");
+		curpath_get(curpath);
+		ls(curpath, "");
 	} else {
+		curpath_get_absolute(temp, argv[i]);
 		for (i = 0; i < argc; i++) {
-			ls(argv[i], argv[i]);
+			ls(temp, "");
 		}
 	}
 	printf("\n");

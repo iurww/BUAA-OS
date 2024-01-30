@@ -74,3 +74,7 @@ int syscall_read_dev(void *va, u_int dev, u_int len) {
 	/* Exercise 5.2: Your code here. (2/2) */
 	return msyscall(SYS_read_dev, va, dev, len);
 }
+
+int syscall_env_var(char *name, char *value, u_int op) {
+	return msyscall(SYS_env_var, name, value, op);
+}

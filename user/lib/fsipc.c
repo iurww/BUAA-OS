@@ -137,3 +137,12 @@ int fsipc_remove(const char *path) {
 int fsipc_sync(void) {
 	return fsipc(FSREQ_SYNC, fsipcbuf, 0, 0);
 }
+
+int fsipc_create(const char *path, int type) {
+	struct Fsreq_create *req = (struct Fsreq_create *)fsipcbuf;
+	strcpy((char *)req->req_path, path);
+	req->type = type;
+	return fsipc(FSREQ_CREATE, fsipcbuf, 0, 0);
+}
+
+

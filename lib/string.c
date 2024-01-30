@@ -95,3 +95,23 @@ int strcmp(const char *p, const char *q) {
 
 	return 0;
 }
+
+char *strcat(char *strDest, const char *strSrc) {
+	char *address = strDest;
+	while (*strDest) {
+		strDest++;
+	}
+
+	while (*strDest++ = *strSrc++) {
+		NULL;
+	}
+	return address;
+}
+
+u_int strhash(const char *str) {
+	unsigned int hash = 5381;
+	unsigned int i = 0;
+	while (*str)
+		hash = ((hash << 5) + hash) + (*str++);
+	return hash % ((1 << 8) - 1);
+}

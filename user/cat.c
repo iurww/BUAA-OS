@@ -22,12 +22,14 @@ int main(int argc, char **argv) {
 	if (argc == 1) {
 		cat(0, "<stdin>");
 	} else {
+		char temp[128] = {0};
 		for (i = 1; i < argc; i++) {
-			f = open(argv[i], O_RDONLY);
+			curpath_get_absolute(temp, argv[i]);
+			f = open(temp, O_RDONLY);
 			if (f < 0) {
-				user_panic("can't open %s: %d", argv[i], f);
+				user_panic("can't open %s: %d", temp, f);
 			} else {
-				cat(f, argv[i]);
+				cat(f, temp);
 				close(f);
 			}
 		}
